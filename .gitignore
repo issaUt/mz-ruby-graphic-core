@@ -1,0 +1,42 @@
+# Ruby / Bundler
+.bundle/
+vendor/bundle/
+Gemfile.lock
+
+# Directories
+*/
+!pngconv_mz/
+!pngconv_mz/**/
+!pngconv_mz/**
+
+# Converter outputs
+*.brd
+*.bsd
+*.bas.bsd
+*.pallet
+*.palette
+
+# Disk images and generated binaries
+*.d88
+*.D88
+
+# Legacy experiments and local scratch
+pngconvMZn*.rb
+pngconvMZv02.rb
+pngconvMZv00[2-6].rb
+pngconvMZv006.rb.txt
+hoge.rb
+MainForm.cs
+info.txt
+
+# Editor / OS files
+.vs/
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
