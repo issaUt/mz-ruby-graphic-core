@@ -249,7 +249,7 @@ Gitに含めないもの:
 初回にGit管理を開始する場合:
 
 ```powershell
-cd D:\home\work\ruby\imagetrans
+cd C:\RetroPC\mz-ruby-graphic-core
 git init
 git status
 git add README.md .gitignore Gemfile pngconvMZ.rb pngconv_mz
