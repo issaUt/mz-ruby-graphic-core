@@ -83,6 +83,12 @@ module DitherCLI
 
       opts.separator ''
       opts.separator 'Help:'
+      opts.on('--info', 'Show converter information') do
+        options[:info_requested] = true
+      end
+      opts.on('--version', 'Show version') do
+        options[:version_requested] = true
+      end
       opts.on('-h', '--help', 'Show this help') do
         puts opts
         exit
@@ -90,6 +96,14 @@ module DitherCLI
     end
 
     remaining = parser.parse!(argv)
+    if options[:info_requested]
+      output_info(options[:json_output])
+      exit
+    end
+    if options[:version_requested]
+      output_version(options[:json_output])
+      exit
+    end
     if remaining.empty?
       warn parser.to_s
       raise OptionParser::MissingArgument, 'INPUT'
@@ -107,7 +121,7 @@ module DitherCLI
     {
       in_path: in_path,
       out_path: out_path,
-      reducer_options: options.reject { |k, _| k == :output_layout || k == :resize_mode || k == :json_output || k == :out_dir || k == :quiet || k == :png_only },
+      reducer_options: reducer_options(options),
       output_layout: options[:output_layout],
       resize_mode: options[:resize_mode],
       png_only: options[:png_only],
@@ -130,6 +144,79 @@ module DitherCLI
     exit 1
   end
 
+
+  def output_version(json_output)
+    if json_output
+      puts JSON.pretty_generate(ok: true, name: 'pngconvMZ', version: PngconvMZ::VERSION)
+    else
+      puts PngconvMZ::VERSION
+    end
+  end
+
+  def output_info(json_output)
+    info = converter_info
+    if json_output
+      puts JSON.pretty_generate({ ok: true }.merge(info))
+    else
+      puts "#{info[:name]} #{info[:version]}"
+      puts "Supported input formats: #{info[:supported_input_formats].join(', ')}"
+      puts "Modes: #{info[:modes].join(', ')}"
+      puts "Layouts: #{info[:layouts].join(', ')}"
+      puts "Resize modes: #{info[:resize_modes].join(', ')}"
+    end
+  end
+
+  def converter_info
+    {
+      name: 'pngconvMZ',
+      version: PngconvMZ::VERSION,
+      target: 'SHARP MZ-2500',
+      supported_input_formats: %w[png jpg jpeg jpe],
+      output_formats: %w[png brd bas.bsd palette],
+      modes: MODES,
+      layouts: OUTPUT_LAYOUTS,
+      resize_modes: RESIZE_MODES,
+      diffusion_methods: DIFFUSION_METHODS,
+      distance_modes: DISTANCE_MODES,
+      remove_modes: REMOVE_MODES,
+      sort_modes: SORT_MODES,
+      fixed_channels: FIXED_CHANNELS,
+      defaults: public_default_options
+    }
+  end
+
+  def public_default_options
+    default_options
+      .slice(
+        :palette_mode,
+        :sort_mode,
+        :fixed_channel,
+        :removeBBDW,
+        :diffusion,
+        :strength,
+        :distance,
+        :output_layout,
+        :resize_mode,
+        :png_only
+      )
+      .transform_values { |value| value.is_a?(Symbol) ? value.to_s : value }
+  end
+
+  def reducer_options(options)
+    options.reject do |key, _|
+      %i[
+        output_layout
+        resize_mode
+        json_output
+        info_requested
+        version_requested
+        out_dir
+        quiet
+        png_only
+      ].include?(key)
+    end
+  end
+
   def default_options
     {
       palette_mode: '8',
@@ -143,6 +230,8 @@ module DitherCLI
       resize_mode: 'fit',
       png_only: false,
       json_output: false,
+      info_requested: false,
+      version_requested: false,
       quiet: false,
       out_dir: nil
     }

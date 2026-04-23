@@ -15,6 +15,7 @@ imagetrans/
     dither_cli.rb
     dither_reducer.rb
     image_loader.rb
+    version.rb
   Gemfile
   README.md
   .gitignore
@@ -76,6 +77,18 @@ gem install chunky_png color
 
 ```powershell
 ruby .\pngconvMZ.rb --help
+```
+
+バージョン確認:
+
+```powershell
+ruby .\pngconvMZ.rb --version
+```
+
+GUI連携向けの情報出力:
+
+```powershell
+ruby .\pngconvMZ.rb --info --json
 ```
 
 ## Requirements

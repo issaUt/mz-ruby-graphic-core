@@ -5,6 +5,7 @@ require 'json'
 require 'optparse'
 require 'stringio'
 
+require_relative 'pngconv_mz/version'
 require_relative 'pngconv_mz/image_loader'
 require_relative 'pngconv_mz/conversion_result'
 require_relative 'pngconv_mz/dither_reducer'
