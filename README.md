@@ -1,6 +1,6 @@
 ﻿# pngconvMZ
 
-MZ向け画像変換用のRubyコマンドラインツールです。PNG画像をMZ-2500向けのPNGプレビュー、BRDデータ、BSD BASIC loader、4096色用palette情報などへ変換します。
+MZ-2500向け画像変換用のRubyコマンドラインツールです。PNG画像をMZ-2500向けのPNGプレビュー、BRDデータ、BSD BASIC loader、4096色用palette情報などへ変換します。
 
 Git管理上の正式エントリーポイントは `pngconvMZ.rb` です。
 
@@ -14,6 +14,7 @@ imagetrans/
     conversion_runner.rb
     dither_cli.rb
     dither_reducer.rb
+    image_loader.rb
   Gemfile
   README.md
   .gitignore
@@ -28,6 +29,8 @@ imagetrans/
 - Ruby gems
   - `chunky_png`
   - `color`
+
+JPEG入力は、利用可能な環境では `jpeg` / `libjpeg-ruby` 系の `require 'jpeg'` に対応したgemを使います。Windows環境では、gemが無い場合でもPowerShell/System.Drawingで読み込みをフォールバックします。
 
 依存gemを入れる場合:
 
@@ -46,13 +49,17 @@ gem install chunky_png color
 基本形:
 
 ```powershell
-ruby .\pngconvMZ.rb [options] input.png [output_base]
+ruby .\pngconvMZ.rb [options] input.png|input.jpg [output_base]
 ```
 
 例:
 
 ```powershell
 ruby .\pngconvMZ.rb -m 16 --layout 320x200 --out-dir .\outdir .\images\source.png sample16
+```
+
+```powershell
+ruby .\pngconvMZ.rb -m 16 --layout 320x200 --out-dir .\outdir .\images\source.jpg sample16
 ```
 
 ```powershell
@@ -69,6 +76,12 @@ GUI連携用のJSON出力:
 ruby .\pngconvMZ.rb --json --quiet -m 512 -f all --layout 320x200 --out-dir .\outdir .\images\source.png sample
 ```
 
+PNGのみ出力:
+
+```powershell
+ruby .\pngconvMZ.rb --png-only -m 16 --layout 320x200 --out-dir .\outdir .\images\source.png sample_png
+```
+
 ## Options
 
 主なオプション:
@@ -81,7 +94,10 @@ ruby .\pngconvMZ.rb --json --quiet -m 512 -f all --layout 320x200 --out-dir .\ou
 - `--layout MODE`
   - `640x400`, `640x200`, `320x200`, `split320x200`
 - `--resize MODE`
-  - `fit`, `keep`
+  - `fit`, `keep`, `cut`
+  - `fit`: 640x400へそのままリサイズ
+  - `keep`: アスペクト比を維持し、不足部分を黒背景で埋める
+  - `cut`: アスペクト比を維持し、中央から640x400比率で切り出す
 - `-d`, `--method METHOD`
   - `floyd_steinberg`, `stucki`, `jarvis`, `no_dither`
 - `--strength VALUE`
@@ -96,6 +112,8 @@ ruby .\pngconvMZ.rb --json --quiet -m 512 -f all --layout 320x200 --out-dir .\ou
   - `no_sort`, `luminance`, `frequency`
 - `--out-dir DIR`
   - 出力先フォルダ
+- `--png-only`
+  - PNGのみを出力し、BRD/BSD/palletなどのMZ向け生成物を作らない
 - `--json`
   - 変換結果をJSONで出力
 - `--quiet`

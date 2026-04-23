@@ -6,7 +6,7 @@ module DitherCLI
   DIFFUSION_METHODS = DitherReducer::DIFFUSION.keys.map(&:to_s).freeze
   DISTANCE_MODES = %w[rgb lab oklab].freeze
   OUTPUT_LAYOUTS = %w[640x400 640x200 320x200 split320x200].freeze
-  RESIZE_MODES = %w[fit keep].freeze
+  RESIZE_MODES = %w[fit keep cut].freeze
 
   module_function
 
@@ -20,10 +20,10 @@ module DitherCLI
 
         Examples:
           ruby #{File.basename($PROGRAM_NAME)} in.png
-          ruby #{File.basename($PROGRAM_NAME)} -m 16 --remove removeBB in.png out.png
+          ruby #{File.basename($PROGRAM_NAME)} -m 16 --remove removeBB in.jpg out.png
           ruby #{File.basename($PROGRAM_NAME)} --mode 512 --fixed g --method jarvis --strength 0.6 in.png
           ruby #{File.basename($PROGRAM_NAME)} --mode 512 --fixed all --layout split320x200 in.png out.png
-          ruby #{File.basename($PROGRAM_NAME)} --mode 4096 --sort luminance --distance oklab --resize keep in.png out.png
+          ruby #{File.basename($PROGRAM_NAME)} --mode 4096 --sort luminance --distance oklab --resize keep in.jpeg out.png
       BANNER
 
       opts.separator ''
@@ -69,6 +69,10 @@ module DitherCLI
         options[:out_dir] = v
       end
 
+      opts.on('--png-only', 'Generate PNG preview only; skip BRD/BSD/palette outputs') do
+        options[:png_only] = true
+      end
+
       opts.on('--json', 'Output conversion result as JSON') do
         options[:json_output] = true
       end
@@ -103,9 +107,10 @@ module DitherCLI
     {
       in_path: in_path,
       out_path: out_path,
-      reducer_options: options.reject { |k, _| k == :output_layout || k == :resize_mode || k == :json_output || k == :out_dir || k == :quiet },
+      reducer_options: options.reject { |k, _| k == :output_layout || k == :resize_mode || k == :json_output || k == :out_dir || k == :quiet || k == :png_only },
       output_layout: options[:output_layout],
       resize_mode: options[:resize_mode],
+      png_only: options[:png_only],
       json_output: options[:json_output],
       out_dir: options[:out_dir],
       quiet: options[:quiet]
@@ -136,6 +141,7 @@ module DitherCLI
       distance: :rgb,
       output_layout: '640x400',
       resize_mode: 'fit',
+      png_only: false,
       json_output: false,
       quiet: false,
       out_dir: nil

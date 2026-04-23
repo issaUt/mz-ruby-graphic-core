@@ -18,9 +18,10 @@ class ConversionRunner
         @cli[:in_path],
         output_path_for(fixed_channel),
         output_layout: @cli[:output_layout],
-        resize_mode: @cli[:resize_mode]
+        resize_mode: @cli[:resize_mode],
+        mz_output: !@cli[:png_only]
       )
-      add_bsd_outputs(reducer, process_result[:outputs], fixed_channel)
+      add_bsd_outputs(reducer, process_result[:outputs], fixed_channel) unless @cli[:png_only]
       result.add_outputs(process_result[:outputs])
       result.add_channel_timing(
         {
@@ -120,6 +121,7 @@ class ConversionRunner
     @cli[:reducer_options].merge(
       output_layout: @cli[:output_layout],
       resize_mode: @cli[:resize_mode],
+      png_only: @cli[:png_only],
       output_dir: File.dirname(@cli[:out_path])
     )
   end

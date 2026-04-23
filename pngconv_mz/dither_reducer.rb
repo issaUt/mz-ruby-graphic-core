@@ -796,9 +796,37 @@ class DitherReducer
       resize_bilinear(img, 640, 400)
     when 'keep'
       prepare_base_image_keep_aspect(img)
+    when 'cut'
+      prepare_base_image_crop_center(img)
     else
       raise ArgumentError, "unsupported resize_mode: #{resize_mode}"
     end
+  end
+
+  def prepare_base_image_crop_center(img)
+    target_ratio = 640.0 / 400
+    src_ratio = img.width.to_f / img.height
+
+    if src_ratio > target_ratio
+      crop_h = img.height
+      crop_w = [(crop_h * target_ratio).round, 1].max
+      crop_x = [(img.width - crop_w) / 2, 0].max
+      crop_y = 0
+    else
+      crop_w = img.width
+      crop_h = [(crop_w / target_ratio).round, 1].max
+      crop_x = 0
+      crop_y = [(img.height - crop_h) / 2, 0].max
+    end
+
+    cropped = ChunkyPNG::Image.new(crop_w, crop_h, ChunkyPNG::Color::BLACK)
+    crop_h.times do |y|
+      crop_w.times do |x|
+        cropped[x, y] = img[crop_x + x, crop_y + y]
+      end
+    end
+
+    resize_bilinear(cropped, 640, 400)
   end
 
   def prepare_base_image_keep_aspect(img)
@@ -845,7 +873,7 @@ class DitherReducer
     end
   end
 
-  def process_single_image(img, out_path)
+  def process_single_image(img, out_path, mz_output: true)
     started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     @palette = nil if @mode == '4096'
     palette_seconds = measure_seconds do
@@ -861,6 +889,21 @@ class DitherReducer
     end
     save_png_seconds = measure_seconds do
       dithered.save(out_path)
+    end
+
+    unless mz_output
+      return {
+        png: out_path,
+        timing: {
+          path: out_path,
+          palette_seconds: round_seconds(palette_seconds),
+          dither_seconds: round_seconds(dither_seconds),
+          simulate_seconds: round_seconds(simulate_seconds),
+          save_png_seconds: round_seconds(save_png_seconds),
+          save_brd_seconds: 0.0,
+          total_seconds: round_seconds(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at)
+        }
+      }
     end
 
     if @mode == '4096'
@@ -890,11 +933,11 @@ class DitherReducer
     )
   end
 
-  def process(in_path, out_path, output_layout: '640x400', resize_mode: 'fit')
+  def process(in_path, out_path, output_layout: '640x400', resize_mode: 'fit', mz_output: true)
     timings = {}
     img = nil
     timings[:read_seconds] = round_seconds(measure_seconds do
-      img = ChunkyPNG::Image.from_file(in_path)
+      img = ImageLoader.load(in_path)
     end)
 
     prepared_images = nil
@@ -903,7 +946,7 @@ class DitherReducer
     end)
 
     outputs = prepared_images.map do |prepared_img, prepared_out_path|
-      process_single_image(prepared_img, prepared_out_path)
+      process_single_image(prepared_img, prepared_out_path, mz_output: mz_output)
     end
 
     {
