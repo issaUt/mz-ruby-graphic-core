@@ -1,6 +1,6 @@
 ﻿# pngconvMZ
 
-MZ-2500向け画像変換用のRubyコマンドラインツールです。PNG画像をMZ-2500向けのPNGプレビュー、BRDデータ、BSD BASIC loader、4096色用palette情報などへ変換します。
+RetroPC (現在 SHARP MZ-2500 のみ対応）向け画像変換コマンドラインツールです。Ruby Script で構成されています。PNG/JPEG画像を MZ-2500向けのPNGプレビュー、BRDデータ、BSD BASIC loader、4096色用palette情報などへ変換します。
 
 Git管理上の正式エントリーポイントは `pngconvMZ.rb` です。
 
@@ -22,6 +22,62 @@ imagetrans/
 
 `imagetrans` 直下のフォルダは、`pngconv_mz/` だけをGit管理対象にします。`images/`, `outdir/`, `oldver/` などの作業用フォルダや素材フォルダは管理対象外です。
 
+## Install Ruby on Windows
+
+本ツールを利用するには、Windows 上に Ruby 実行環境が必要です。
+
+### Recommended Installer
+
+Windows では RubyInstaller for Windows を推奨します。
+
+https://rubyinstaller.org/
+
+・インストール時は以下を有効にしてください。
+
+Add Ruby executables to your PATH
+
+インストール完了後、PowerShell またはコマンドプロンプトで確認します。
+
+```powershell
+ruby -v
+```
+
+### Confirmed Version
+
+本ツールは以下の環境で動作確認しています。
+
+Ruby 3.2.2
+
+より新しい Ruby でも動作する可能性がありますが、問題がある場合は Ruby 3.2 系を推奨します。
+
+### Install Bundler
+
+```powershell
+gem install bundler
+```
+
+### Install Required Gems
+
+README.md と同じ階層に Gemfile を配置しているため、以下で依存ライブラリを導入できます。
+
+```powershell
+bundle install
+```
+
+Bundler を使用しない場合は個別導入も可能です。
+
+```powershell
+gem install chunky_png color
+```
+
+### Test Execution
+
+以下でヘルプが表示されれば準備完了です。
+
+```powershell
+ruby .\pngconvMZ.rb --help
+```
+
 ## Requirements
 
 - Ruby
@@ -30,7 +86,7 @@ imagetrans/
   - `chunky_png`
   - `color`
 
-JPEG入力は、利用可能な環境では `jpeg` / `libjpeg-ruby` 系の `require 'jpeg'` に対応したgemを使います。Windows環境では、gemが無い場合でもPowerShell/System.Drawingで読み込みをフォールバックします。
+JPEG入力は、利用可能な環境では `require 'jpeg'` に対応したJPEG gemを使います。Windows環境では、JPEG gemが無い場合でもPowerShell/System.Drawingで読み込みをフォールバックします。
 
 依存gemを入れる場合:
 
@@ -43,6 +99,16 @@ Bundlerを使わずに直接入れる場合:
 ```powershell
 gem install chunky_png color
 ```
+
+WSL/LinuxなどWindows以外でJPEG入力を使う場合は、JPEG gemとlibjpeg開発パッケージが必要です。Ubuntu/WSLの例:
+
+```bash
+sudo apt update
+sudo apt install build-essential libjpeg-dev
+gem install jpeg
+```
+
+WindowsではJPEG gemのネイティブビルドに失敗する環境があるため、`Gemfile` にはJPEG gemを必須依存として追加していません。Windows中心の利用では `chunky_png` と `color` のみで問題ありません。
 
 ## Usage
 
@@ -113,7 +179,7 @@ ruby .\pngconvMZ.rb --png-only -m 16 --layout 320x200 --out-dir .\outdir .\image
 - `--out-dir DIR`
   - 出力先フォルダ
 - `--png-only`
-  - PNGのみを出力し、BRD/BSD/palletなどのMZ向け生成物を作らない
+  - PNGのみを出力し、BRD/BSD/paletteなどのMZ向け生成物を作らない
 - `--json`
   - 変換結果をJSONで出力
 - `--quiet`
@@ -135,12 +201,18 @@ ruby .\pngconvMZ.rb --help
   - MZ向け画面データ
 - `.bas.bsd`
   - BASIC loader
-- `.pallet`
+- `.palette`
   - 4096色モード用palette情報
 
 これらの変換結果は生成物なのでGit管理対象外です。
 
-`split320x200` ではUpper/Lower用に `_u` / `_l` を含むファイル名を生成し、BSDは `_ul.bas.bsd` を生成します。
+### 特殊モード
+
+MZ-2500 では、320x200 256色の画像データを上下に並べて 320x400 256色 として表示することが出来ます。
+layout に `split320x200` を指定した場合、このモードとなります。
+
+Upper/Lower用に `_u` / `_l` を含む画像ファイル名のデータを生成し、MZ-2500 BASIC-M25 用の
+画像ファイルローダとなる BSDファイル `_ul.bas.bsd` を生成します。
 
 ## Git Policy
 
@@ -155,7 +227,7 @@ Gitに含めるもの:
 Gitに含めないもの:
 
 - `pngconv_mz/` 以外の直下フォルダ
-- `.png`, `.brd`, `.bsd`, `.bas.bsd`, `.pallet` などの変換出力
+- `.png`, `.brd`, `.bsd`, `.bas.bsd`, `.palette` などの変換出力
 - `.d88` などのディスクイメージ
 - 古い実験版スクリプト
 - GUI側プロジェクトのコピーや一時ファイル
@@ -170,3 +242,7 @@ git status
 git add README.md .gitignore Gemfile pngconvMZ.rb pngconv_mz
 git commit -m "Initial Ruby converter"
 ```
+
+## Notes
+
+本ツールは Ruby コアをベースとし、別途 C# GUI フロントエンドとの連携を想定して開発しています。

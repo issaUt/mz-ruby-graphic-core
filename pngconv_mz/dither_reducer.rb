@@ -612,7 +612,7 @@ class DitherReducer
 
   def write_4096_palette_report(brd_path, hp_index_r)
     lines = build_4096_palette_report_lines(hp_index_r)
-    palette_path = File.join(File.dirname(brd_path), "#{File.basename(brd_path, '.*')}.pallet")
+    palette_path = File.join(File.dirname(brd_path), "#{File.basename(brd_path, '.*')}.palette")
     File.write(palette_path, lines.join("
 ") + "
 ")
