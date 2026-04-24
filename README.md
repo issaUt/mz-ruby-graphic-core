@@ -212,9 +212,9 @@ ruby .\pngconvMZ.rb --png-only -m 16 --layout 320x200 --out-dir .\outdir .\image
 - `--distance MODE`
   - 指定値: `rgb`, `lab`, `oklab`
   - 減色時に、元画像の色とパレット色のどれが最も近いかを判定するための色距離計算方法を指定する。
-  - `rgb`: RGB空間の距離で近い色を選ぶ
-  - `lab`: Lab色空間で近い色を選ぶ
-  - `oklab`: Oklab色空間で近い色を選ぶ
+  - `rgb`: RGB値の差でそのまま判定。単純で分かりやすい
+  - `lab`: 人の見た目に近い色差で判定。明るさと色味のバランスを取りやすい
+  - `oklab`: 見た目の自然さを重視した色差で判定。写真系に向くことが多い
 - `-r`, `--remove MODE`
   - 指定値: `no_remove`, `removeBB`, `removeDW`, `removeBBDW`
   - 16色モード用。サンプリング時に邪魔になるグレー系の色をサンプリングテーブルから削除するための指定をする。
