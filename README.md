@@ -13,6 +13,7 @@ Git 管理上の正式なエントリーポイントは `pngconvMZ.rb` です。
 
 - Ruby core: [mz-ruby-graphic-core](https://github.com/issaUt/mz-ruby-graphic-core)
 - GUI frontend: [retropc-graphic-converter](https://github.com/issaUt/retropc-graphic-converter)
+- Change log: [CHANGELOG.md](CHANGELOG.md)
 
 GUI フロントエンドからこの Ruby スクリプトを呼び出して使うこともできます。
 
