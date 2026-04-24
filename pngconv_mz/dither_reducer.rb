@@ -156,7 +156,9 @@ class DitherReducer
 
   def build_512_palette(ch)
     full = (0..7).to_a
-    fixed = [1, 3, 5, 7]
+    # Verified against MZ-2500 output: the omitted fixed-channel low bit behaves
+    # like the even 3-bit levels (0,2,4,6), not the odd levels.
+    fixed = [0, 2, 4, 6]
 
     lr = ch == 'R' ? fixed : full
     lg = ch == 'G' ? fixed : full
@@ -369,38 +371,6 @@ class DitherReducer
     {
       brd: path
     }
-  end
-
-  def simulate_mz2500_512_image(image)
-    out = ChunkyPNG::Image.new(image.width, image.height, ChunkyPNG::Color::BLACK)
-
-    image.height.times do |y|
-      image.width.times do |x|
-        r, g, b = ChunkyPNG::Color.to_truecolor_bytes(image[x, y])
-        br = channel_to_3bit(r)
-        bg = channel_to_3bit(g)
-        bb = channel_to_3bit(b)
-
-        case @fixed_ch
-        when 'R'
-          br &= 0b110
-        when 'G'
-          bg &= 0b110
-        when 'B'
-          bb &= 0b110
-        else
-          raise ArgumentError, "unsupported 512 fixed channel: #{@fixed_ch}"
-        end
-
-        out[x, y] = ChunkyPNG::Color.rgb(
-          channel_3bit_to_8bit(br),
-          channel_3bit_to_8bit(bg),
-          channel_3bit_to_8bit(bb)
-        )
-      end
-    end
-
-    out
   end
 
   def build_mz2500_512_buffer(image)
@@ -884,9 +854,7 @@ class DitherReducer
     dither_seconds = measure_seconds do
       dithered = dither(img.dup)
     end
-    simulate_seconds = measure_seconds do
-      dithered = simulate_mz2500_512_image(dithered) if @mode == '512'
-    end
+    simulate_seconds = 0.0
     save_png_seconds = measure_seconds do
       dithered.save(out_path)
     end
