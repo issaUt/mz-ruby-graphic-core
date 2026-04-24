@@ -171,11 +171,23 @@ ruby .\pngconvMZ.rb --png-only -m 16 --layout 320x200 --out-dir .\outdir .\image
 
 - `-m`, `--mode MODE`
   - `8`, `16`, `512`, `4096`
+  - `8`: MZ標準8色パレットで減色
+  - `16`: MZ標準16色パレットで減色
+  - `512`: MZ-2500 の 320x200/256色表示系を利用した 512色相当モード
+  - `4096`: 画像から16色パレットを自動抽出し、4096色系情報もあわせて出力
 - `-f`, `--fixed CHANNEL`
   - 512色モード用固定チャンネル
   - `R`, `G`, `B`, `all`
+  - `R`: 赤チャンネルを固定して変換
+  - `G`: 緑チャンネルを固定して変換
+  - `B`: 青チャンネルを固定して変換
+  - `all`: `R` / `G` / `B` の3パターンをまとめて出力
 - `--layout MODE`
   - `640x400`, `640x200`, `320x200`, `split320x200`
+  - `640x400`: 640x400 の1画面として出力
+  - `640x200`: 640x200 の1画面として出力
+  - `320x200`: 320x200 の1画面として出力
+  - `split320x200`: 320x200 を上下2枚に分けて出力し、320x400相当として扱う
 - `--resize MODE`
   - `fit`, `keep`, `cut`
   - `fit`: 640x400 へそのままリサイズ
@@ -183,24 +195,43 @@ ruby .\pngconvMZ.rb --png-only -m 16 --layout 320x200 --out-dir .\outdir .\image
   - `cut`: アスペクト比を維持し、中央から 640x400 比率で切り出す
 - `-d`, `--method METHOD`
   - `floyd_steinberg`, `stucki`, `jarvis`, `no_dither`
+  - `floyd_steinberg`: 標準的な誤差拡散ディザ
+  - `stucki`: 拡散範囲が広く、比較的なめらかに見えやすいディザ
+  - `jarvis`: 拡散範囲が広いジャービス系ディザ
+  - `no_dither`: ディザなしで最近傍色に置き換え
 - `--strength VALUE`
   - `0.0` to `1.0`
+  - ディザの誤差拡散の強さ。`0.0` で拡散なし、`1.0` で標準強度
 - `--distance MODE`
   - `rgb`, `lab`, `oklab`
+  - `rgb`: RGB空間の距離で近い色を選ぶ
+  - `lab`: Lab色空間で近い色を選ぶ
+  - `oklab`: Oklab色空間で近い色を選ぶ
 - `-r`, `--remove MODE`
   - 16色モード用
   - `no_remove`, `removeBB`, `removeDW`, `removeBBDW`
+  - `no_remove`: 16色をそのまま使う
+  - `removeBB`: 明るい黒系 (`BB`) を除外
+  - `removeDW`: 暗い白系 (`DW`) を除外
+  - `removeBBDW`: `BB` と `DW` の両方を除外
 - `-s`, `--sort MODE`
   - 4096色モード用
   - `no_sort`, `luminance`, `frequency`
+  - `no_sort`: 抽出順をそのまま使う
+  - `luminance`: 明るさ順で並べる
+  - `frequency`: 出現頻度が高い色を優先して並べる
 - `--out-dir DIR`
   - 出力先フォルダ
+  - 指定しない場合は入力画像と同じフォルダへ出力
 - `--png-only`
   - PNG のみを出力し、BRD/BSD/palette などの MZ 向け生成物を作らない
+  - 実機向けデータを出さず、プレビューPNGだけ確認したいときに使う
 - `--json`
   - 変換結果を JSON で出力
+  - GUI連携や外部ツール連携向け
 - `--quiet`
   - 通常ログ出力を抑制
+  - `--json` と組み合わせて使うと結果だけを扱いやすい
 
 詳細は以下で確認できます。
 
