@@ -70,12 +70,16 @@ module DitherCLI
         options[:out_dir] = v
       end
 
-      opts.on('--d88 PATH', 'Create/update D88 image and add generated MZ files') do |v|
+      opts.on('--d88 PATH', 'Create D88 image and add generated MZ files') do |v|
         options[:d88_path] = File.expand_path(v)
       end
 
       opts.on('--d88-title TITLE', 'Disk title used when creating a new D88 image') do |v|
         options[:d88_title] = v
+      end
+
+      opts.on('--d88-append-if-exists', 'Append files when the target D88 image already exists') do
+        options[:d88_append_if_exists] = true
       end
 
       opts.on('--d88-sidecar MODE', D88_SIDECAR_MODES, "Keep or delete BRD/BSD files after D88 packing: #{D88_SIDECAR_MODES.join(', ')} (default: #{options[:d88_sidecar]})") do |v|
@@ -142,6 +146,7 @@ module DitherCLI
       out_dir: options[:out_dir],
       d88_path: options[:d88_path],
       d88_title: options[:d88_title],
+      d88_append_if_exists: options[:d88_append_if_exists],
       d88_sidecar: options[:d88_sidecar],
       quiet: options[:quiet]
     }
@@ -230,6 +235,7 @@ module DitherCLI
         out_dir
         d88_path
         d88_title
+        d88_append_if_exists
         d88_sidecar
         quiet
         png_only
@@ -256,6 +262,7 @@ module DitherCLI
       out_dir: nil,
       d88_path: nil,
       d88_title: nil,
+      d88_append_if_exists: false,
       d88_sidecar: 'keep'
     }
   end

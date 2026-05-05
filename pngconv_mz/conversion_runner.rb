@@ -126,6 +126,7 @@ class ConversionRunner
       output_dir: File.dirname(@cli[:out_path]),
       d88_path: @cli[:d88_path],
       d88_title: @cli[:d88_title],
+      d88_append_if_exists: @cli[:d88_append_if_exists],
       d88_sidecar: @cli[:d88_sidecar]
     )
   end
@@ -138,7 +139,11 @@ class ConversionRunner
   def write_d88_image(result)
     d88_path = @cli[:d88_path]
     title = @cli[:d88_title] || default_d88_title(d88_path)
-    disk = File.exist?(d88_path) ? MZD88::Disk.load(d88_path) : MZD88::Disk.blank(title: title)
+    disk = if @cli[:d88_append_if_exists] && File.exist?(d88_path)
+             MZD88::Disk.load(d88_path)
+           else
+             MZD88::Disk.blank(title: title)
+           end
     disk_name_map = d88_source_paths(result).to_h do |path|
       [path, d88_disk_name_for(path)]
     end
@@ -151,7 +156,7 @@ class ConversionRunner
 
     disk.save(d88_path)
     result.add_d88_output(d88_path)
-    result.add_logs("D88 updated: #{File.expand_path(d88_path)}")
+    result.add_logs("D88 saved: #{File.expand_path(d88_path)}")
     cleanup_d88_sidecar_files(result) if @cli[:d88_sidecar] == 'delete'
   ensure
     temp_paths&.each do |temp_path|
