@@ -9,6 +9,7 @@ require_relative 'pngconv_mz/version'
 require_relative 'pngconv_mz/image_loader'
 require_relative 'pngconv_mz/conversion_result'
 require_relative 'pngconv_mz/dither_reducer'
+require_relative 'pngconv_mz/mzd88'
 require_relative 'pngconv_mz/conversion_runner'
 require_relative 'pngconv_mz/dither_cli'
 

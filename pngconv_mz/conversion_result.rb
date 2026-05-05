@@ -9,6 +9,7 @@ class ConversionResult
     @timings = {
       channels: []
     }
+    @d88_outputs = []
   end
 
   def add_outputs(items)
@@ -45,6 +46,20 @@ class ConversionResult
     @outputs.map { |item| item[:bsd] }.compact
   end
 
+  def add_d88_output(path)
+    @d88_outputs << path unless @d88_outputs.include?(path)
+  end
+
+  def d88_outputs
+    @d88_outputs.dup
+  end
+
+  def remove_file_output!(key, path)
+    @outputs.each do |item|
+      item.delete(key) if item[key] == path
+    end
+  end
+
   def to_h
     {
       ok: true,
@@ -53,7 +68,8 @@ class ConversionResult
         png: png_outputs.map { |path| absolute_path(path) },
         brd: brd_outputs.map { |path| absolute_path(path) },
         palette: palette_outputs.map { |path| absolute_path(path) },
-        bsd: bsd_outputs.map { |path| absolute_path(path) }
+        bsd: bsd_outputs.map { |path| absolute_path(path) },
+        d88: d88_outputs.map { |path| absolute_path(path) }
       },
       options: @options,
       timing: @timings,

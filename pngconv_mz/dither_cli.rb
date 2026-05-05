@@ -7,6 +7,7 @@ module DitherCLI
   DISTANCE_MODES = %w[rgb lab oklab].freeze
   OUTPUT_LAYOUTS = %w[640x400 640x200 320x200 split320x200].freeze
   RESIZE_MODES = %w[fit keep cut].freeze
+  D88_SIDECAR_MODES = %w[keep delete].freeze
 
   module_function
 
@@ -69,6 +70,18 @@ module DitherCLI
         options[:out_dir] = v
       end
 
+      opts.on('--d88 PATH', 'Create/update D88 image and add generated MZ files') do |v|
+        options[:d88_path] = File.expand_path(v)
+      end
+
+      opts.on('--d88-title TITLE', 'Disk title used when creating a new D88 image') do |v|
+        options[:d88_title] = v
+      end
+
+      opts.on('--d88-sidecar MODE', D88_SIDECAR_MODES, "Keep or delete BRD/BSD files after D88 packing: #{D88_SIDECAR_MODES.join(', ')} (default: #{options[:d88_sidecar]})") do |v|
+        options[:d88_sidecar] = v
+      end
+
       opts.on('--png-only', 'Generate PNG preview only; skip BRD/BSD/palette outputs') do
         options[:png_only] = true
       end
@@ -127,6 +140,9 @@ module DitherCLI
       png_only: options[:png_only],
       json_output: options[:json_output],
       out_dir: options[:out_dir],
+      d88_path: options[:d88_path],
+      d88_title: options[:d88_title],
+      d88_sidecar: options[:d88_sidecar],
       quiet: options[:quiet]
     }
   rescue OptionParser::ParseError => e
@@ -172,7 +188,7 @@ module DitherCLI
       version: PngconvMZ::VERSION,
       target: 'SHARP MZ-2500',
       supported_input_formats: %w[png jpg jpeg jpe],
-      output_formats: %w[png brd bas.bsd palette],
+      output_formats: %w[png brd bas.bsd palette d88],
       modes: MODES,
       layouts: OUTPUT_LAYOUTS,
       resize_modes: RESIZE_MODES,
@@ -197,7 +213,8 @@ module DitherCLI
         :distance,
         :output_layout,
         :resize_mode,
-        :png_only
+        :png_only,
+        :d88_sidecar
       )
       .transform_values { |value| value.is_a?(Symbol) ? value.to_s : value }
   end
@@ -211,6 +228,9 @@ module DitherCLI
         info_requested
         version_requested
         out_dir
+        d88_path
+        d88_title
+        d88_sidecar
         quiet
         png_only
       ].include?(key)
@@ -233,7 +253,10 @@ module DitherCLI
       info_requested: false,
       version_requested: false,
       quiet: false,
-      out_dir: nil
+      out_dir: nil,
+      d88_path: nil,
+      d88_title: nil,
+      d88_sidecar: 'keep'
     }
   end
 
@@ -262,25 +285,28 @@ module DitherCLI
 
     if options[:output_layout] == 'split320x200' && options[:palette_mode] != '512'
       raise OptionParser::InvalidArgument, <<~MSG.chomp
-        split320x200 は 512色モード専用です。
-        --mode 512 を指定してください。
+        split320x200 驍ｵ・ｺ繝ｻ・ｯ 512雎ｼ・ｶ繝ｻ・ｲ驛｢譎｢・ｽ・｢驛｢譎｢・ｽ・ｼ驛｢譎臥櫨繝ｻ・ｰ郢ｧ閾･闊樣し・ｺ繝ｻ・ｧ驍ｵ・ｺ陷ｷ・ｶ・つ郢晢ｽｻ
+        --mode 512 驛｢・ｧ陷ｻ蝓滂ｽｬ・ｰ髯橸ｽｳ陞｢・ｹ繝ｻ・ｰ驍ｵ・ｺ繝ｻ・ｦ驍ｵ・ｺ闕ｳ蟯ｩ蜻ｳ驍ｵ・ｺ髴郁ｲｻ・ｼ讓抵ｽｸ・ｲ郢晢ｽｻ
       MSG
     end
 
     if options[:palette_mode] == '512' && options[:output_layout] == '640x400'
       raise OptionParser::InvalidArgument, <<~MSG.chomp
-        512色モードでは 640x400 レイアウトは使用できません。
-        --layout 640x200, 320x200, split320x200 のいずれかを指定してください。
+        512雎ｼ・ｶ繝ｻ・ｲ驛｢譎｢・ｽ・｢驛｢譎｢・ｽ・ｼ驛｢譎擾ｽｳ・ｨ邵ｲ蝣､・ｸ・ｺ繝ｻ・ｯ 640x400 驛｢譎｢・ｽ・ｬ驛｢・ｧ繝ｻ・､驛｢・ｧ繝ｻ・｢驛｢・ｧ繝ｻ・ｦ驛｢譎冗樟郢晢ｽｻ髣厄ｽｴ繝ｻ・ｿ鬨ｾ蛹・ｽｽ・ｨ驍ｵ・ｺ繝ｻ・ｧ驍ｵ・ｺ鬮ｦ・ｪ遶擾ｽｪ驍ｵ・ｺ陝ｶ蜻ｻ・ｽ骰具ｽｸ・ｲ郢晢ｽｻ
+        --layout 640x200, 320x200, split320x200 驍ｵ・ｺ繝ｻ・ｮ驍ｵ・ｺ郢晢ｽｻ隨倥・・ｹ・ｧ陟募具ｽｰ驛｢・ｧ陷ｻ蝓滂ｽｬ・ｰ髯橸ｽｳ陞｢・ｹ繝ｻ・ｰ驍ｵ・ｺ繝ｻ・ｦ驍ｵ・ｺ闕ｳ蟯ｩ蜻ｳ驍ｵ・ｺ髴郁ｲｻ・ｼ讓抵ｽｸ・ｲ郢晢ｽｻ
       MSG
     end
 
     if options[:fixed_channel] == 'all' && options[:palette_mode] != '512'
       raise OptionParser::InvalidArgument, <<~MSG.chomp
-        --fixed all は 512色モード専用です。
-        --mode 512 を指定してください。
+        --fixed all 驍ｵ・ｺ繝ｻ・ｯ 512雎ｼ・ｶ繝ｻ・ｲ驛｢譎｢・ｽ・｢驛｢譎｢・ｽ・ｼ驛｢譎臥櫨繝ｻ・ｰ郢ｧ閾･闊樣し・ｺ繝ｻ・ｧ驍ｵ・ｺ陷ｷ・ｶ・つ郢晢ｽｻ
+        --mode 512 驛｢・ｧ陷ｻ蝓滂ｽｬ・ｰ髯橸ｽｳ陞｢・ｹ繝ｻ・ｰ驍ｵ・ｺ繝ｻ・ｦ驍ｵ・ｺ闕ｳ蟯ｩ蜻ｳ驍ｵ・ｺ髴郁ｲｻ・ｼ讓抵ｽｸ・ｲ郢晢ｽｻ
       MSG
     end
 
+    if options[:png_only] && options[:d88_path]
+      raise OptionParser::InvalidArgument, '--d88 cannot be used together with --png-only'
+    end
 
     case options[:palette_mode]
     when '8'

@@ -1,4 +1,4 @@
-class DitherReducer
+﻿class DitherReducer
   BASE_RGB8 = [
     [0, 0, 0],
     [0, 0, 255],
@@ -356,7 +356,7 @@ class DitherReducer
     pixels_new = image_to_brd_indices(image, palette_bundle[:hp_index], palette_bundle[:hp_hist])
     write_brd_file(path, image.width, image.height, pixels_new)
     print_brd_histogram(palette_bundle[:hp_index_r], palette_bundle[:hp_hist])
-    palette_result = write_4096_palette_report(path, palette_bundle[:hp_index_r]) if @mode == '4096'
+    palette_result = write_4096_palette_report(path, palette_bundle[:hp_index_r], palette_bundle[:hp_hist]) if @mode == '4096'
 
     {
       brd: path,
@@ -549,9 +549,13 @@ class DitherReducer
     end
   end
 
-  def build_4096_palette_report_lines(hp_index_r)
+  def build_4096_palette_report_lines(hp_index_r, hp_hist)
     pl_m25 = []
-    lines = []
+    lines = [
+      'MZ-2500 4096-color palette usage',
+      'No, ( R,  G,  B) : Count',
+      '----------------------------'
+    ]
 
     hp_index_r.keys.sort.each do |i|
       key = hp_index_r[i]
@@ -562,7 +566,7 @@ class DitherReducer
       val[2] = get_8bit_2_4bit_value(keys[2].to_i)
 
       pl_m25.push(val) if i != 0
-      line = format('%2d, ( %d, %d, %d )', i, val[0], val[1], val[2])
+      line = format('%2d, (%2d, %2d, %2d) : %6d', i, val[0], val[1], val[2], hp_hist[key] || 0)
       puts line
       lines << line
     end
@@ -575,20 +579,19 @@ class DitherReducer
     print color_line
     print "
 "
-    lines << color_line
 
-    lines
+    [lines, color_line]
   end
 
-  def write_4096_palette_report(brd_path, hp_index_r)
-    lines = build_4096_palette_report_lines(hp_index_r)
+  def write_4096_palette_report(brd_path, hp_index_r, hp_hist)
+    lines, color_line = build_4096_palette_report_lines(hp_index_r, hp_hist)
     palette_path = File.join(File.dirname(brd_path), "#{File.basename(brd_path, '.*')}.palette")
     File.write(palette_path, lines.join("
 ") + "
 ")
     {
       palette: palette_path,
-      color_line: lines.last
+      color_line: color_line
     }
   end
 
@@ -875,7 +878,7 @@ class DitherReducer
     end
 
     if @mode == '4096'
-      puts '抽出されたパレット:'
+      puts '謚ｽ蜃ｺ縺輔ｌ縺溘ヱ繝ｬ繝・ヨ:'
       @palette.each_with_index do |(r, g, b), i|
         puts '%2d: (%3d, %3d, %3d)' % [i, r, g, b]
       end
@@ -933,4 +936,5 @@ class DitherReducer
     seconds.round(4)
   end
 end
+
 
