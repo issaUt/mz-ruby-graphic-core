@@ -1,4 +1,5 @@
 module DitherCLI
+  MACHINES = PngconvMZ::MachineProfiles.ids.freeze
   MODES = %w[8 16 512 4096].freeze
   SORT_MODES = %w[no_sort luminance frequency].freeze
   REMOVE_MODES = %w[no_remove removeBB removeDW removeBBDW].freeze
@@ -29,6 +30,10 @@ module DitherCLI
 
       opts.separator ''
       opts.separator 'General options:'
+
+      opts.on('--machine MACHINE', MACHINES, "Target machine: #{MACHINES.join(', ')} (default: #{options[:machine]})") do |v|
+        options[:machine] = PngconvMZ::MachineProfiles.normalize_id(v)
+      end
 
       opts.on('-m', '--mode MODE', MODES, "Palette mode: #{MODES.join(', ')} (default: #{options[:palette_mode]})") do |v|
         options[:palette_mode] = v
@@ -139,6 +144,7 @@ module DitherCLI
       in_path: in_path,
       out_path: out_path,
       reducer_options: reducer_options(options),
+      machine: options[:machine],
       output_layout: options[:output_layout],
       resize_mode: options[:resize_mode],
       png_only: options[:png_only],
@@ -191,7 +197,8 @@ module DitherCLI
     {
       name: 'pngconvMZ',
       version: PngconvMZ::VERSION,
-      target: 'SHARP MZ-2500',
+      target: PngconvMZ::MachineProfiles.label(default_options[:machine]),
+      machines: PngconvMZ::MachineProfiles.public_profiles,
       supported_input_formats: %w[png jpg jpeg jpe],
       output_formats: %w[png brd bas.bsd palette d88],
       modes: MODES,
@@ -210,6 +217,7 @@ module DitherCLI
     default_options
       .slice(
         :palette_mode,
+        :machine,
         :sort_mode,
         :fixed_channel,
         :removeBBDW,
@@ -246,6 +254,7 @@ module DitherCLI
   def default_options
     {
       palette_mode: '8',
+      machine: 'mz2500',
       sort_mode: :no_sort,
       fixed_channel: 'R',
       removeBBDW: :no_remove,
@@ -286,8 +295,18 @@ module DitherCLI
   end
 
   def validate!(options)
+    profile = PngconvMZ::MachineProfiles.fetch(options[:machine])
+
     unless options[:strength].between?(0.0, 1.0)
       raise OptionParser::InvalidArgument, '--strength must be between 0.0 and 1.0'
+    end
+
+    unless profile[:modes].include?(options[:palette_mode])
+      raise OptionParser::InvalidArgument, "--mode #{options[:palette_mode]} is not supported on machine=#{options[:machine]}"
+    end
+
+    unless profile[:layouts_by_mode].fetch(options[:palette_mode], []).include?(options[:output_layout])
+      raise OptionParser::InvalidArgument, "--layout #{options[:output_layout]} is not supported on machine=#{options[:machine]} with mode=#{options[:palette_mode]}"
     end
 
     if options[:output_layout] == 'split320x200' && options[:palette_mode] != '512'
@@ -309,6 +328,10 @@ module DitherCLI
         --fixed all 驍ｵ・ｺ繝ｻ・ｯ 512雎ｼ・ｶ繝ｻ・ｲ驛｢譎｢・ｽ・｢驛｢譎｢・ｽ・ｼ驛｢譎臥櫨繝ｻ・ｰ郢ｧ閾･闊樣し・ｺ繝ｻ・ｧ驍ｵ・ｺ陷ｷ・ｶ・つ郢晢ｽｻ
         --mode 512 驛｢・ｧ陷ｻ蝓滂ｽｬ・ｰ髯橸ｽｳ陞｢・ｹ繝ｻ・ｰ驍ｵ・ｺ繝ｻ・ｦ驍ｵ・ｺ闕ｳ蟯ｩ蜻ｳ驍ｵ・ｺ髴郁ｲｻ・ｼ讓抵ｽｸ・ｲ郢晢ｽｻ
       MSG
+    end
+
+    if options[:palette_mode] == '512' && !profile[:fixed_channels].include?(options[:fixed_channel])
+      raise OptionParser::InvalidArgument, "--fixed #{options[:fixed_channel]} is not supported on machine=#{options[:machine]}"
     end
 
     if options[:png_only] && options[:d88_path]

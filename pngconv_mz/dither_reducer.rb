@@ -73,6 +73,7 @@
 
   def initialize(
     palette_mode: '8',
+    machine: 'mz2500',
     sort_mode: :no_sort,
     fixed_channel: 'R',
     removeBBDW: :no_remove,
@@ -80,6 +81,8 @@
     strength: 1.0,
     distance: :rgb
   )
+    @machine_id = PngconvMZ::MachineProfiles.normalize_id(machine)
+    @machine_profile = PngconvMZ::MachineProfiles.fetch(@machine_id)
     @mode = palette_mode.to_s
     @sort_mode = sort_mode.to_sym
     @fixed_ch = fixed_channel.upcase
@@ -156,7 +159,7 @@
 
   def build_512_palette(ch)
     full = (0..7).to_a
-    # Verified against MZ-2500 output: the omitted fixed-channel low bit behaves
+    # Verified against MZ-2500 family output: the omitted fixed-channel low bit behaves
     # like the even 3-bit levels (0,2,4,6), not the odd levels.
     fixed = [0, 2, 4, 6]
 
@@ -391,7 +394,7 @@
           br = channel_to_3bit(r)
           bg = channel_to_3bit(g)
           bb = channel_to_3bit(b)
-          bit = 1 << lx
+          bit = pixel_bit(lx)
 
           buffer[base] |= bit if (bb & 0b100) != 0
           buffer[base + 1] |= bit if (br & 0b100) != 0
@@ -515,7 +518,7 @@
 
           i = 0
           while i < 8
-            bit = 1 << i
+            bit = pixel_bit(i)
             val = pixels_new[y][x + i]
 
             bit_b |= bit if val[0] != 0
@@ -552,7 +555,7 @@
   def build_4096_palette_report_lines(hp_index_r, hp_hist)
     pl_m25 = []
     lines = [
-      'MZ-2500 4096-color palette usage',
+      "#{@machine_profile[:label]} 4096-color palette usage",
       'No, ( R,  G,  B) : Count',
       '----------------------------'
     ]
@@ -560,10 +563,12 @@
     hp_index_r.keys.sort.each do |i|
       key = hp_index_r[i]
       keys = key.split('_')
-      val = Array.new(3, 0)
-      val[0] = get_8bit_2_4bit_value(keys[1].to_i)
-      val[1] = get_8bit_2_4bit_value(keys[0].to_i)
-      val[2] = get_8bit_2_4bit_value(keys[2].to_i)
+      key_values = {
+        r: get_8bit_2_4bit_value(keys[0].to_i),
+        g: get_8bit_2_4bit_value(keys[1].to_i),
+        b: get_8bit_2_4bit_value(keys[2].to_i)
+      }
+      val = @machine_profile[:palette_4096_component_order].map { |channel| key_values.fetch(channel) }
 
       pl_m25.push(val) if i != 0
       line = format('%2d, (%2d, %2d, %2d) : %6d', i, val[0], val[1], val[2], hp_hist[key] || 0)
@@ -773,6 +778,17 @@
       prepare_base_image_crop_center(img)
     else
       raise ArgumentError, "unsupported resize_mode: #{resize_mode}"
+    end
+  end
+
+  def pixel_bit(index)
+    case @machine_profile[:standard_pixel_bit_order]
+    when :lsb_left
+      1 << index
+    when :msb_left
+      1 << (7 - index)
+    else
+      raise ArgumentError, "unsupported pixel bit order for machine=#{@machine_id}"
     end
   end
 
